@@ -146,10 +146,12 @@ def finance_move_money(
 @mcp.tool()
 def finance_quick_add(text: str) -> dict:
     """
-    Catat pengeluaran dari teks natural language dalam 1 tool call.
-    Otomatis deteksi nominal, rekening, dan envelope.
-    Contoh: 'makan ayam 15k gopay', 'bensin 50rb bca', 'kopi kenangan 35000 dana'
-    Gunakan tool ini sebagai default untuk mencatat pengeluaran sehari-hari.
+    GUNAKAN INI sebagai satu-satunya cara mencatat pengeluaran sehari-hari.
+    JANGAN panggil finance_get_accounts atau finance_get_envelopes terlebih dahulu —
+    tool ini sudah menangani resolusi rekening dan envelope secara internal.
+
+    Otomatis deteksi: nominal, rekening, envelope, payee.
+    Contoh input: 'makan ayam 15k gopay', 'bensin 50rb bca', 'kopi kenangan 35000 dana'
     """
     return _quick_add.quick_add(text)
 
@@ -170,10 +172,12 @@ def finance_add_transaction(
     transaction_date: str | None = None,
 ) -> dict:
     """
-    Catat transaksi. type: income | expense | transfer.
-    envelope_id: wajib untuk expense, gunakan income source id untuk income.
-    payee: penerima uang (Alfamart, Grab, dll).
-    memo: catatan bebas.
+    Catat transaksi dengan ID eksplisit. Gunakan ini hanya untuk:
+    - income dan transfer (bukan expense sehari-hari)
+    - saat perlu kontrol penuh atas account_id / envelope_id / tanggal
+
+    Untuk expense sehari-hari, gunakan finance_quick_add — lebih cepat dan tidak perlu ID.
+    type: income | expense | transfer.
     transaction_date format YYYY-MM-DD (default hari ini).
     """
     return transactions.add_transaction(
