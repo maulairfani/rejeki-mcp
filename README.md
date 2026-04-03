@@ -21,7 +21,7 @@ Monorepo dengan tiga apps di folder `apps/`:
 
 - **`apps/mcp-server/`** — FastMCP server; tools untuk transaksi, envelope, rekening
 - **`apps/auth-server/`** — OAuth 2.1 dengan login form berbasis `users.json`
-- **`apps/platform/`** — Dashboard visualisasi (coming soon)
+- **`apps/platform/`** — Dashboard visualisasi data keuangan (port 8002)
 
 ---
 
@@ -34,6 +34,7 @@ git clone https://github.com/maulairfani/rejeki-mcp-server.git
 cd rejeki-mcp-server
 pip install -e apps/mcp-server
 pip install -e apps/auth-server
+pip install -e apps/platform
 ```
 
 ### 2. Buat file `.env`
@@ -49,19 +50,26 @@ TEST_TOKEN=token-rahasia-bebas
 TEST_DB=./users/test.db
 ```
 
-### 3. Jalankan MCP server
+### 3. Jalankan server
 
 ```bash
-python -m rejeki_mcp.server
-# atau via entry point (setelah install):
+# MCP server (port 8001)
 rejeki
+
+# Auth server (port 9004) — opsional untuk dev, cukup pakai TEST_TOKEN
+rejeki-auth
+
+# Platform dashboard (port 8002)
+rejeki-platform
 ```
 
-Server berjalan di `http://localhost:8001`. Test dengan:
+MCP server test:
 
 ```bash
 curl http://localhost:8001/health
 ```
+
+Platform dashboard: buka `http://localhost:8002` di browser, login dengan credentials dari `users.json`.
 
 ### 4. Konek ke claude.ai (lokal)
 

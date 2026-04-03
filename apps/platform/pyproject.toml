@@ -1,9 +1,21 @@
 [project]
 name = "rejeki_platform"
-version = "0.0.1"
+version = "0.1.0"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "jinja2",
+    "python-dotenv",
+    "itsdangerous",
+]
+
+[project.scripts]
+rejeki-platform = "rejeki_platform.server:main"
 
 [build-system]
 requires = ["setuptools>=42"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
