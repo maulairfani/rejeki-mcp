@@ -18,6 +18,7 @@ from rejeki.tools.apps import mcp as _apps_mcp
 from rejeki.tools.envelopes import mcp as _envelopes_mcp
 from rejeki.tools.scheduled import mcp as _scheduled_mcp
 from rejeki.tools.transactions import mcp as _transactions_mcp
+from rejeki.tools.wishlist import mcp as _wishlist_mcp
 
 load_dotenv()
 
@@ -116,6 +117,7 @@ mcp.mount(_transactions_mcp, namespace="finance")
 mcp.mount(_scheduled_mcp,    namespace="finance")
 mcp.mount(_analytics_mcp,    namespace="finance")
 mcp.mount(_apps_mcp,         namespace="finance")
+mcp.mount(_wishlist_mcp,     namespace="finance")
 
 
 # ---------------------------------------------------------------------------

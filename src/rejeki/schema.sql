@@ -72,6 +72,17 @@ CREATE TABLE IF NOT EXISTS scheduled_transactions (
     created_at     TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS wishlist (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    name       TEXT NOT NULL,
+    price      REAL,
+    priority   TEXT NOT NULL DEFAULT 'medium' CHECK (priority IN ('high', 'medium', 'low')),
+    url        TEXT,
+    notes      TEXT,
+    status     TEXT NOT NULL DEFAULT 'wanted' CHECK (status IN ('wanted', 'bought')),
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 -- Default envelope groups
 INSERT OR IGNORE INTO envelope_groups (id, name, sort_order) VALUES
     (1, 'Kebutuhan Tetap',       1),
