@@ -48,7 +48,7 @@ def delete_account(db: Database, id: int) -> dict:
 # FastMCP provider
 # ---------------------------------------------------------------------------
 
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 from rejeki.deps import get_user_db
 
 mcp = FastMCP("accounts")

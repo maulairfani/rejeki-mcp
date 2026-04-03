@@ -2,7 +2,7 @@
 name = "rejeki"
 version = "0.1.0"
 requires-python = ">=3.11"
-dependencies = ["mcp[cli]", "httpx", "python-dotenv"]
+dependencies = ["fastmcp", "httpx", "python-dotenv"]
 
 [project.scripts]
 rejeki = "rejeki.server:main"

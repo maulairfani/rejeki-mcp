@@ -1,18 +1,13 @@
-import contextlib
 import os
 from datetime import datetime
 from urllib.parse import quote
 
 import httpx
 from dotenv import load_dotenv
-from mcp.server.auth.provider import AccessToken, TokenVerifier
-from mcp.server.auth.settings import AuthSettings
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
+from fastmcp.server.auth import TokenVerifier, AccessToken
 from mcp.types import Icon
-from mcp.server.transport_security import TransportSecuritySettings
-from pydantic import AnyHttpUrl
 from starlette.applications import Starlette
-from starlette.requests import Request
 from starlette.responses import PlainTextResponse
 from starlette.routing import Mount, Route
 
@@ -27,14 +22,7 @@ load_dotenv()
 
 # ─── CONFIG ──────────────────────────────────────────────────────────────────
 
-AS_BASE_URL   = os.environ.get("AS_BASE_URL",    "https://maulairfani.my.id/rejeki/auth")
-MCP_BASE_URL  = os.environ.get("MCP_BASE_URL",   "https://maulairfani.my.id/rejeki/mcp")
 INTROSPECT_URL = os.environ.get("INTROSPECT_URL", "http://127.0.0.1:9004/introspect")
-
-_ALLOWED_HOSTS = os.environ.get(
-    "MCP_ALLOWED_HOSTS",
-    "maulairfani.my.id,localhost:*,127.0.0.1:*,[::1]:*",
-).split(",")
 
 
 # ─── TOKEN VERIFIER ──────────────────────────────────────────────────────────
@@ -67,7 +55,6 @@ class RejekiTokenVerifier(TokenVerifier):
             token=token,
             client_id=data.get("username", data.get("client_id", "unknown")),
             scopes=data.get("scope", "").split(),
-            expires_at=data.get("exp"),
         )
 
 
@@ -107,29 +94,11 @@ _rejeki_icon = Icon(
 mcp = FastMCP(
     "rejeki",
     icons=[_rejeki_icon],
-    stateless_http=True,
-    json_response=True,
-    streamable_http_path="/",
-    token_verifier=_token_verifier,
-    auth=AuthSettings(
-        issuer_url=AnyHttpUrl(AS_BASE_URL),
-        resource_server_url=AnyHttpUrl(MCP_BASE_URL),
-        required_scopes=["rejeki"],
-    ),
-    transport_security=TransportSecuritySettings(
-        enable_dns_rebinding_protection=True,
-        allowed_hosts=_ALLOWED_HOSTS,
-        allowed_origins=[
-            "https://maulairfani.my.id",
-            "http://localhost:*",
-            "http://127.0.0.1:*",
-        ],
-    ),
+    auth=_token_verifier,
     instructions=(
         "Aplikasi personal envelope-budgeting. "
         "Melacak rekening, kategori envelope, transaksi, dan aset. "
         "Format tanggal: YYYY-MM-DD. Nominal dalam IDR. "
-        "Resources (finance://) untuk membaca data. "
         "Tools untuk aksi: tambah, edit, hapus, assign, approve. "
         "Prompts tersedia untuk workflow: budget_review, monthly_planning, onboarding_guide."
     ),
@@ -140,17 +109,11 @@ mcp = FastMCP(
 # Compose sub-servers
 # ---------------------------------------------------------------------------
 
-def _mount(sub: FastMCP, prefix: str) -> None:
-    """Mount semua tools dari sub-server ke main MCP dengan prefix."""
-    for tool in sub._tool_manager.list_tools():
-        mcp.add_tool(tool.fn, name=f"{prefix}_{tool.name}", description=tool.description)
-
-
-_mount(_accounts_mcp,     "finance")
-_mount(_envelopes_mcp,    "finance")
-_mount(_transactions_mcp, "finance")
-_mount(_scheduled_mcp,    "finance")
-_mount(_analytics_mcp,    "finance")
+mcp.mount(_accounts_mcp,     namespace="finance")
+mcp.mount(_envelopes_mcp,    namespace="finance")
+mcp.mount(_transactions_mcp, namespace="finance")
+mcp.mount(_scheduled_mcp,    namespace="finance")
+mcp.mount(_analytics_mcp,    namespace="finance")
 
 
 # ---------------------------------------------------------------------------
@@ -206,18 +169,14 @@ def onboarding_guide() -> str:
 # ASGI app
 # ---------------------------------------------------------------------------
 
-@contextlib.asynccontextmanager
-async def lifespan(app):
-    async with mcp.session_manager.run():
-        yield
-
+mcp_app = mcp.http_app(path="/", stateless_http=True)
 
 app = Starlette(
-    lifespan=lifespan,
     routes=[
         Route("/health", lambda r: PlainTextResponse("ok")),
-        Mount("/mcp", app=mcp.streamable_http_app()),
+        Mount("/mcp", app=mcp_app),
     ],
+    lifespan=mcp_app.lifespan,
 )
 
 
