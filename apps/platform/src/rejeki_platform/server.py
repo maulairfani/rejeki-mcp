@@ -62,9 +62,9 @@ async def dashboard(request: Request, username: str = Depends(require_user)):
         trend = {"labels": [], "incomes": [], "expenses": []}
 
     return _TEMPLATES.TemplateResponse(
+        request,
         "dashboard.html",
         {
-            "request": request,
             "username": username,
             "period": period,
             "period_display": period_display,

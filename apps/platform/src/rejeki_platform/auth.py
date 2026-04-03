@@ -37,7 +37,7 @@ def _check_credentials(username: str, password: str) -> bool:
 
 @auth_router.get("/login")
 async def login_page(request: Request):
-    return _TEMPLATES.TemplateResponse("login.html", {"request": request, "error": False})
+    return _TEMPLATES.TemplateResponse(request, "login.html", {"error": False})
 
 
 @auth_router.post("/login")
@@ -49,7 +49,7 @@ async def login_submit(request: Request):
         request.session["username"] = username
         return RedirectResponse(url="/", status_code=302)
     return _TEMPLATES.TemplateResponse(
-        "login.html", {"request": request, "error": True}, status_code=401
+        request, "login.html", {"error": True}, status_code=401
     )
 
 
