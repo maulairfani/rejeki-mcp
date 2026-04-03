@@ -1,12 +1,14 @@
 import contextlib
 import os
 from datetime import datetime
+from urllib.parse import quote
 
 import httpx
 from dotenv import load_dotenv
 from mcp.server.auth.provider import AccessToken, TokenVerifier
 from mcp.server.auth.settings import AuthSettings
 from mcp.server.fastmcp import FastMCP
+from mcp.types import Icon
 from mcp.server.transport_security import TransportSecuritySettings
 from pydantic import AnyHttpUrl
 from starlette.applications import Starlette
@@ -94,8 +96,17 @@ if _test_token:
 else:
     _token_verifier = RejekiTokenVerifier()
 
+_rejeki_icon = Icon(
+    src="data:image/svg+xml," + quote(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">'
+        '<text y="26" font-size="28">💰</text></svg>'
+    ),
+    mimeType="image/svg+xml",
+)
+
 mcp = FastMCP(
     "rejeki",
+    icons=[_rejeki_icon],
     stateless_http=True,
     json_response=True,
     streamable_http_path="/",
@@ -135,11 +146,11 @@ def _mount(sub: FastMCP, prefix: str) -> None:
         mcp.add_tool(tool.fn, name=f"{prefix}_{tool.name}", description=tool.description)
 
 
-_mount(_accounts_mcp, "finance")
-_mount(_envelopes_mcp, "finance")
+_mount(_accounts_mcp,     "finance")
+_mount(_envelopes_mcp,    "finance")
 _mount(_transactions_mcp, "finance")
-_mount(_scheduled_mcp, "finance")
-_mount(_analytics_mcp, "finance")
+_mount(_scheduled_mcp,    "finance")
+_mount(_analytics_mcp,    "finance")
 
 
 # ---------------------------------------------------------------------------
