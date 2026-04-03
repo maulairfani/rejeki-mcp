@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from mcp.server.auth.provider import AccessToken, TokenVerifier
 from mcp.server.auth.settings import AuthSettings
 from mcp.server.fastmcp import FastMCP
+from fastmcp.server.transforms import PromptsAsTools, ResourcesAsTools
 from mcp.server.transport_security import TransportSecuritySettings
 from pydantic import AnyHttpUrl
 from starlette.applications import Starlette
@@ -121,6 +122,9 @@ mcp = FastMCP(
         "Prompts tersedia untuk workflow: budget_review, monthly_planning, onboarding_guide."
     ),
 )
+
+mcp.add_transform(ResourcesAsTools(mcp))
+mcp.add_transform(PromptsAsTools(mcp))
 
 
 # ---------------------------------------------------------------------------
