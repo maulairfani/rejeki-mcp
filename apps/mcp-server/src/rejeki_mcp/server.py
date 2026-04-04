@@ -11,7 +11,7 @@ from starlette.applications import Starlette
 from starlette.responses import PlainTextResponse
 from starlette.routing import Mount, Route
 
-from rejeki_mcp.deps import _db_path
+from rejeki_mcp.deps import _db_path, _db_username
 from rejeki_mcp.prompts.budget import mcp as _budget_prompts_mcp
 from rejeki_mcp.prompts.onboarding import mcp as _onboarding_prompts_mcp
 from rejeki_mcp.tools.accounts import mcp as _accounts_mcp
@@ -60,6 +60,7 @@ class RejekiTokenVerifier(TokenVerifier):
         username = data.get("username", data.get("client_id", "unknown"))
         db = data.get("db", os.path.expanduser("~/rejeki.db"))
         _db_path.set(db)
+        _db_username.set(username)
 
         logger.info("token_verify_ok: user=%s", username)
 
@@ -79,7 +80,8 @@ class TestTokenVerifier(TokenVerifier):
     async def verify_token(self, token: str) -> AccessToken | None:
         if token != self._token:
             return None
-        # _db_path falls back to TEST_DB env var in get_user_db()
+        # _db_path and _db_username fall back to TEST_DB/TEST_USERNAME env vars in get_user_db()
+        _db_username.set("test-user-eval-001")
         return AccessToken(
             token=token,
             client_id="test-user-eval-001",

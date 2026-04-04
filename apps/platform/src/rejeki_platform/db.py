@@ -1,5 +1,35 @@
+import hashlib
+import hmac
 import os
 import sqlite3
+
+
+def _derive_db_key(username: str) -> str | None:
+    """Derive a per-user SQLCipher key from the master DB_ENCRYPTION_KEY.
+
+    Returns None if DB_ENCRYPTION_KEY is not set (encryption disabled).
+    """
+    master = os.environ.get("DB_ENCRYPTION_KEY")
+    if not master:
+        return None
+    return hmac.new(master.encode(), username.encode(), hashlib.sha256).hexdigest()
+
+
+def _open_user_db(path: str, username: str) -> sqlite3.Connection:
+    """Open a user's personal SQLite DB, applying SQLCipher encryption if configured."""
+    key = _derive_db_key(username)
+    if key:
+        try:
+            import sqlcipher3
+            conn = sqlcipher3.connect(path)
+            conn.execute(f"PRAGMA key = '{key}'")
+            conn.row_factory = sqlite3.Row
+            return conn
+        except ImportError:
+            pass
+    conn = sqlite3.connect(path)
+    conn.row_factory = sqlite3.Row
+    return conn
 
 
 def get_conn(username: str) -> sqlite3.Connection:
@@ -14,9 +44,7 @@ def get_conn(username: str) -> sqlite3.Connection:
     conn.close()
     if not row:
         raise ValueError(f"Unknown user: {username}")
-    user_conn = sqlite3.connect(row["db_path"])
-    user_conn.row_factory = sqlite3.Row
-    return user_conn
+    return _open_user_db(row["db_path"], username)
 
 
 def get_accounts(username: str) -> dict:

@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
+from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
 from rejeki_platform.auth import NotAuthenticated, auth_router, require_user
@@ -15,16 +16,38 @@ from rejeki_platform.db import get_accounts, get_envelope_status, get_monthly_su
 
 load_dotenv()
 
+_SESSION_SECRET = os.environ.get("SESSION_SECRET")
+if not _SESSION_SECRET and not os.environ.get("TEST_TOKEN"):
+    raise RuntimeError(
+        "SESSION_SECRET env var must be set. "
+        "Set it to a long random string (e.g. openssl rand -hex 32)."
+    )
+
 _MONTHS = [
     "", "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December",
 ]
 
 app = FastAPI(title="Rejeki Platform")
+
+_secure_cookies = os.environ.get("SECURE_COOKIES", "").lower() == "true"
 app.add_middleware(
     SessionMiddleware,
-    secret_key=os.environ.get("SESSION_SECRET", "dev-secret-change-me"),
+    secret_key=_SESSION_SECRET or "dev-secret-test-only",
+    https_only=_secure_cookies,
+    same_site="lax",
 )
+
+if os.environ.get("FORCE_HTTPS", "").lower() == "true":
+    class _HTTPSRedirectMiddleware(BaseHTTPMiddleware):
+        async def dispatch(self, request: Request, call_next):
+            proto = request.headers.get("x-forwarded-proto", "http")
+            if proto == "http":
+                url = request.url.replace(scheme="https")
+                return RedirectResponse(url=str(url), status_code=301)
+            return await call_next(request)
+
+    app.add_middleware(_HTTPSRedirectMiddleware)
 
 _TEMPLATES = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 

@@ -2,7 +2,7 @@
 name = "rejeki_mcp"
 version = "0.1.0"
 requires-python = ">=3.11"
-dependencies = ["fastmcp", "httpx", "python-dotenv"]
+dependencies = ["fastmcp", "httpx", "python-dotenv", "sqlcipher3-wheels"]
 
 [project.scripts]
 rejeki = "rejeki_mcp.server:main"

@@ -10,6 +10,7 @@ dependencies = [
     "itsdangerous",
     "bcrypt",
     "python-json-logger",
+    "sqlcipher3-wheels",
 ]
 
 [project.scripts]
