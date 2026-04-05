@@ -28,6 +28,11 @@ export const getDashboard = () => api.get("/dashboard")
 export const getAccounts = () => api.get("/accounts")
 export const getEnvelopes = (period?: string) =>
   api.get("/envelopes", { params: period ? { period } : {} })
+
+export const patchEnvelopeAssign = (id: number, period: string, assigned: number) =>
+  api.patch(`/envelopes/${id}/assign`, { assigned }, { params: { period } })
+
+export const getScheduled = () => api.get("/scheduled")
 export const getTransactions = (params?: {
   period?: string
   account_id?: number

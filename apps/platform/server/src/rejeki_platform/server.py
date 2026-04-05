@@ -16,6 +16,7 @@ from rejeki_platform.routes.auth import router as auth_router
 from rejeki_platform.routes.accounts import router as accounts_router
 from rejeki_platform.routes.dashboard import router as dashboard_router
 from rejeki_platform.routes.envelopes import router as envelopes_router
+from rejeki_platform.routes.scheduled import router as scheduled_router
 from rejeki_platform.routes.transactions import router as transactions_router
 
 load_dotenv()
@@ -63,6 +64,7 @@ app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
 app.include_router(dashboard_router, prefix="/api/dashboard", tags=["dashboard"])
 app.include_router(accounts_router, prefix="/api/accounts", tags=["accounts"])
 app.include_router(envelopes_router, prefix="/api/envelopes", tags=["envelopes"])
+app.include_router(scheduled_router, prefix="/api/scheduled", tags=["scheduled"])
 app.include_router(transactions_router, prefix="/api/transactions", tags=["transactions"])
 
 # Serve React frontend build (production)

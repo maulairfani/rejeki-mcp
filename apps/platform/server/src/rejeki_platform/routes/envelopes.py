@@ -1,11 +1,16 @@
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, Query
+from pydantic import BaseModel
 
 from rejeki_platform.auth import require_user
-from rejeki_platform.db import get_envelope_status
+from rejeki_platform.db import assign_envelope, get_envelope_status
 
 router = APIRouter()
+
+
+class AssignRequest(BaseModel):
+    assigned: float
 
 
 @router.get("")
@@ -16,3 +21,14 @@ async def envelopes(
     if not period:
         period = datetime.now().strftime("%Y-%m")
     return get_envelope_status(username, period)
+
+
+@router.patch("/{envelope_id}/assign")
+async def assign(
+    envelope_id: int,
+    body: AssignRequest,
+    period: str = Query(...),
+    username: str = Depends(require_user),
+):
+    assign_envelope(username, envelope_id, period, body.assigned)
+    return {"ok": True}

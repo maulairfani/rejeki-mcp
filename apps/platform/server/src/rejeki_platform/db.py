@@ -64,6 +64,10 @@ def get_envelope_status(username: str, period: str) -> list[dict]:
             e.name,
             e.icon,
             COALESCE(eg.name, 'Uncategorized') AS group_name,
+            COALESCE(eg.sort_order, 999) AS group_sort,
+            e.target_type,
+            e.target_amount,
+            e.target_deadline,
             COALESCE(bp.assigned, 0) AS assigned,
             COALESCE(bp.carryover, 0) AS carryover,
             COALESCE(SUM(CASE WHEN t.type = 'expense' THEN t.amount ELSE 0 END), 0) AS activity
@@ -90,6 +94,35 @@ def get_envelope_status(username: str, period: str) -> list[dict]:
         d["overspent"] = d["available"] < 0
         result.append(d)
     return result
+
+
+def assign_envelope(username: str, envelope_id: int, period: str, assigned: float) -> None:
+    sql = """
+        INSERT INTO budget_periods (envelope_id, period, assigned)
+        VALUES (?, ?, ?)
+        ON CONFLICT(envelope_id, period) DO UPDATE SET assigned = excluded.assigned
+    """
+    with get_conn(username) as conn:
+        conn.execute(sql, (envelope_id, period, assigned))
+        conn.commit()
+
+
+def get_scheduled(username: str) -> list[dict]:
+    sql = """
+        SELECT
+            s.id, s.amount, s.type, s.payee, s.memo,
+            s.scheduled_date, s.recurrence, s.is_active,
+            a.name AS account_name,
+            e.name AS envelope_name
+        FROM scheduled_transactions s
+        LEFT JOIN accounts a ON s.account_id = a.id
+        LEFT JOIN envelopes e ON s.envelope_id = e.id
+        WHERE s.is_active = 1
+        ORDER BY s.scheduled_date
+    """
+    with get_conn(username) as conn:
+        rows = conn.execute(sql).fetchall()
+    return [dict(r) for r in rows]
 
 
 def get_monthly_summary(username: str, period: str) -> dict:
