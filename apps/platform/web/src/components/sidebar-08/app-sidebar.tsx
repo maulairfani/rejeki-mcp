@@ -29,9 +29,9 @@ const data = {
   },
   navMain: [
     {
-      title: "Dashboard",
-      url: "/",
-      icon: LayoutDashboard,
+      title: "Envelopes",
+      url: "/envelopes",
+      icon: Wallet,
     },
     {
       title: "Transactions",
@@ -39,9 +39,9 @@ const data = {
       icon: List,
     },
     {
-      title: "Envelopes",
-      url: "/envelopes",
-      icon: Wallet,
+      title: "Analytics",
+      url: "/analytics",
+      icon: LayoutDashboard,
     },
     {
       title: "Accounts",

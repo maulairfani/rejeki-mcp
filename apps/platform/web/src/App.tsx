@@ -18,15 +18,17 @@ import {
 import { DashboardPage } from "@/pages/DashboardPage"
 import { TransactionsPage } from "@/pages/TransactionsPage"
 import { EnvelopesPage } from "@/pages/EnvelopesPage"
+import { AccountsPage } from "@/pages/AccountsPage"
 
 const BREADCRUMBS: Record<string, string> = {
-  "/dashboard": "Dashboard",
-  "/transactions": "Transactions",
   "/envelopes": "Envelopes",
+  "/transactions": "Transactions",
+  "/analytics": "Analytics",
+  "/accounts": "Accounts",
 }
 
 export default function App() {
-  const title = BREADCRUMBS[window.location.pathname] ?? "Dashboard"
+  const title = BREADCRUMBS[window.location.pathname] ?? "Envelopes"
   const [showNominal, setShowNominal] = useState(false)
   const { theme, setTheme } = useTheme()
 
@@ -65,10 +67,11 @@ export default function App() {
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
           <Routes>
-            <Route path="/dashboard" element={<DashboardPage showNominal={showNominal} />} />
-            <Route path="/transactions" element={<TransactionsPage showNominal={showNominal} />} />
             <Route path="/envelopes" element={<EnvelopesPage showNominal={showNominal} />} />
-            <Route path="*" element={<DashboardPage showNominal={showNominal} />} />
+            <Route path="/transactions" element={<TransactionsPage showNominal={showNominal} />} />
+            <Route path="/analytics" element={<DashboardPage showNominal={showNominal} />} />
+            <Route path="/accounts" element={<AccountsPage />} />
+            <Route path="*" element={<EnvelopesPage showNominal={showNominal} />} />
           </Routes>
         </div>
       </SidebarInset>

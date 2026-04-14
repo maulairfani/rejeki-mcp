@@ -27,7 +27,7 @@ export function NavMain({
         {items.map((item) => {
           const isActive =
             pathname === item.url ||
-            (item.url === "/" && (pathname === "" || pathname === "/dashboard"))
+            (item.url === "/envelopes" && (pathname === "" || pathname === "/"))
 
           return (
             <SidebarMenuItem key={item.title}>
