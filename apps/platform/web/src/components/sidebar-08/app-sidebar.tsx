@@ -1,4 +1,5 @@
 import * as React from "react"
+import { Link } from "react-router-dom"
 import {
   CreditCard,
   LayoutDashboard,
@@ -68,7 +69,7 @@ export function AppSidebar({ theme, setTheme, ...props }: AppSidebarProps) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" render={<a href="/" />}>
+            <SidebarMenuButton size="lg" render={<Link to="/" />}>
               <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                 <Wallet className="size-4" />
               </div>

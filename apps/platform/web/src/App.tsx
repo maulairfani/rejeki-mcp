@@ -1,5 +1,5 @@
-import { useState } from "react"
-import { Route, Routes } from "react-router-dom"
+import { useState, useCallback } from "react"
+import { Route, Routes, useLocation } from "react-router-dom"
 import { Eye, EyeOff } from "lucide-react"
 import { AppSidebar } from "@/components/sidebar-08/app-sidebar"
 import { useTheme } from "@/hooks/useTheme"
@@ -28,8 +28,17 @@ const BREADCRUMBS: Record<string, string> = {
 }
 
 export default function App() {
-  const title = BREADCRUMBS[window.location.pathname] ?? "Envelopes"
-  const [showNominal, setShowNominal] = useState(false)
+  const { pathname } = useLocation()
+  const title = BREADCRUMBS[pathname] ?? "Envelopes"
+  const [showNominal, setShowNominal] = useState(
+    () => localStorage.getItem("envel-show-nominal") === "true"
+  )
+  const toggleNominal = useCallback(() => {
+    setShowNominal((v) => {
+      localStorage.setItem("envel-show-nominal", String(!v))
+      return !v
+    })
+  }, [])
   const { theme, setTheme } = useTheme()
 
   return (
@@ -52,7 +61,7 @@ export default function App() {
             </Breadcrumb>
           </div>
           <button
-            onClick={() => setShowNominal((v) => !v)}
+            onClick={toggleNominal}
             className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
               showNominal
                 ? "bg-primary/10 text-primary border-primary/20"
