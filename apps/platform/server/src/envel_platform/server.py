@@ -12,6 +12,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from starlette.requests import Request
 from starlette.responses import RedirectResponse
 
+from envel_platform.routes.analytics import router as analytics_router
 from envel_platform.routes.auth import router as auth_router
 from envel_platform.routes.accounts import router as accounts_router
 from envel_platform.routes.chat import router as chat_router
@@ -61,6 +62,7 @@ if os.environ.get("FORCE_HTTPS", "").lower() == "true":
 
     app.add_middleware(_HTTPSRedirectMiddleware)
 
+app.include_router(analytics_router, prefix="/api/analytics", tags=["analytics"])
 app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
 app.include_router(chat_router, prefix="/api/chat", tags=["chat"])
 app.include_router(dashboard_router, prefix="/api/dashboard", tags=["dashboard"])

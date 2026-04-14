@@ -214,6 +214,26 @@ def get_transactions(
     return [dict(r) for r in rows]
 
 
+def get_daily_expenses(username: str, days: int = 30) -> list[dict]:
+    """Return daily expense rows for the last N days, grouped by date + envelope."""
+    sql = """
+        SELECT
+            date(t.date) AS day,
+            COALESCE(e.id, 0) AS envelope_id,
+            COALESCE(e.name, 'Uncategorized') AS envelope_name,
+            SUM(t.amount) AS amount
+        FROM transactions t
+        LEFT JOIN envelopes e ON t.envelope_id = e.id
+        WHERE t.type = 'expense'
+          AND date(t.date) >= date('now', ?)
+        GROUP BY day, e.id
+        ORDER BY day
+    """
+    with get_conn(username) as conn:
+        rows = conn.execute(sql, (f"-{days} days",)).fetchall()
+    return [dict(r) for r in rows]
+
+
 def get_spending_trend(username: str, months: int = 6) -> dict:
     sql = """
         SELECT
