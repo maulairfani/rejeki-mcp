@@ -38,10 +38,20 @@ export function TransactionDayGroup({
   const { label, relative } = formatDayHeader(group.date)
   const net = group.income - group.expense
 
+  const netColor =
+    net > 0
+      ? "text-emerald-600 dark:text-emerald-400"
+      : net < 0
+        ? "text-foreground"
+        : "text-muted-foreground"
+
+  const netLabel =
+    net > 0 ? `+${formatIDR(net)}` : net < 0 ? `-${formatIDR(Math.abs(net))}` : formatIDR(0)
+
   return (
     <div>
       {/* Day header */}
-      <div className="flex items-baseline justify-between px-3.5 py-2">
+      <div className="flex items-baseline justify-between px-3.5 py-2.5">
         <div className="flex items-baseline gap-2">
           <h3 className="text-[13px] font-semibold font-heading">
             {label}
@@ -52,18 +62,9 @@ export function TransactionDayGroup({
             </span>
           )}
         </div>
-        <div className="flex items-baseline gap-3 text-[12px] tabular-nums">
-          {group.income > 0 && (
-            <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-              {showNominal ? `+${formatIDR(group.income)}` : "•••"}
-            </span>
-          )}
-          {group.expense > 0 && (
-            <span className="text-red-600 dark:text-red-400 font-medium">
-              {showNominal ? `-${formatIDR(group.expense)}` : "•••"}
-            </span>
-          )}
-        </div>
+        <span className={`text-[14px] font-heading font-bold tabular-nums ${netColor}`}>
+          {showNominal ? netLabel : "•••"}
+        </span>
       </div>
 
       {/* Transactions */}

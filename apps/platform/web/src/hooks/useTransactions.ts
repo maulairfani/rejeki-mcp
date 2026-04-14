@@ -104,7 +104,7 @@ function buildMockTransactions(): Transaction[] {
         id: id++,
         amount,
         type: "income",
-        envelope,
+        envelope: null,
         account: ACCOUNTS[Math.floor(rand() * ACCOUNTS.length)],
         toAccount: null,
         payee,
