@@ -1,6 +1,5 @@
 import * as React from "react"
 import {
-  BarChart3,
   CreditCard,
   LayoutDashboard,
   LifeBuoy,
@@ -33,12 +32,6 @@ const data = {
       title: "Dashboard",
       url: "/",
       icon: LayoutDashboard,
-    },
-    {
-      title: "Analytics",
-      url: "/analytics",
-      icon: BarChart3,
-      isActive: true,
     },
     {
       title: "Transactions",

@@ -47,11 +47,16 @@ export default function App() {
           </div>
           <button
             onClick={() => setShowNominal((v) => !v)}
-            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+              showNominal
+                ? "bg-primary/10 text-primary border-primary/20"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
             aria-label={showNominal ? "Hide amounts" : "Show amounts"}
+            aria-pressed={showNominal}
           >
             {showNominal ? <Eye className="size-3.5" /> : <EyeOff className="size-3.5" />}
-            {showNominal ? "Hide amounts" : "Show amounts"}
+            {showNominal ? "Amounts visible" : "Amounts hidden"}
           </button>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
