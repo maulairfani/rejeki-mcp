@@ -20,6 +20,7 @@ from envel_platform.routes.dashboard import router as dashboard_router
 from envel_platform.routes.envelopes import router as envelopes_router
 from envel_platform.routes.scheduled import router as scheduled_router
 from envel_platform.routes.transactions import router as transactions_router
+from envel_platform.routes.wishlist import router as wishlist_router
 
 load_dotenv()
 
@@ -70,6 +71,7 @@ app.include_router(accounts_router, prefix="/api/accounts", tags=["accounts"])
 app.include_router(envelopes_router, prefix="/api/envelopes", tags=["envelopes"])
 app.include_router(scheduled_router, prefix="/api/scheduled", tags=["scheduled"])
 app.include_router(transactions_router, prefix="/api/transactions", tags=["transactions"])
+app.include_router(wishlist_router, prefix="/api/wishlist", tags=["wishlist"])
 
 # Serve React frontend build (production)
 _ui_dist = Path(__file__).parent.parent.parent.parent / "web" / "dist"

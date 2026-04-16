@@ -214,6 +214,25 @@ def get_transactions(
     return [dict(r) for r in rows]
 
 
+def get_wishlist(username: str, status: str | None = None) -> list[dict]:
+    conditions = []
+    params: list = []
+    if status in ("wanted", "bought"):
+        conditions.append("status = ?")
+        params.append(status)
+    where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+    sql = f"""
+        SELECT id, name, price, priority, url, notes, status,
+               created_at AS createdAt
+        FROM wishlist
+        {where}
+        ORDER BY created_at DESC
+    """
+    with get_conn(username) as conn:
+        rows = conn.execute(sql, params).fetchall()
+    return [dict(r) for r in rows]
+
+
 def get_daily_expenses(username: str, days: int = 30) -> list[dict]:
     """Return daily expense rows for the last N days, grouped by date + envelope."""
     sql = """
