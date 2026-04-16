@@ -59,11 +59,30 @@ CREATE TABLE IF NOT EXISTS users (
 );
 """
 
+CREATE_AUTH_TABLES = """
+CREATE TABLE IF NOT EXISTS oauth_clients (
+    client_id   TEXT PRIMARY KEY,
+    client_json TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS oauth_tokens (
+    token      TEXT PRIMARY KEY,
+    client_id  TEXT NOT NULL,
+    username   TEXT NOT NULL,
+    scopes     TEXT NOT NULL,
+    expires_at INTEGER NOT NULL,
+    resource   TEXT
+);
+"""
+
+TOKEN_TTL = 3600 * 24 * 30  # 30 days
+
 
 def _get_users_conn() -> sqlite3.Connection:
     conn = sqlite3.connect(USERS_DB)
     conn.row_factory = sqlite3.Row
     conn.execute(CREATE_USERS_TABLE)
+    conn.executescript(CREATE_AUTH_TABLES)
     return conn
 
 
@@ -79,14 +98,12 @@ def _get_user(username: str) -> dict | None:
 # ─── OAUTH PROVIDER ──────────────────────────────────────────────────────────
 
 class EnvelOAuthProvider(OAuthAuthorizationServerProvider[AuthorizationCode, RefreshToken, AccessToken]):
-    """OAuth provider backed by users.db credentials."""
+    """OAuth provider backed by users.db credentials. Clients and tokens are persisted to SQLite."""
 
     def __init__(self, base_url: str):
         self.base_url = base_url.rstrip("/")
-        self.clients: dict[str, OAuthClientInformationFull] = {}
+        # Short-lived state — in-memory only (minutes lifetime, no need to persist)
         self.auth_codes: dict[str, AuthorizationCode] = {}
-        self.tokens: dict[str, AccessToken] = {}
-        self.token_user: dict[str, str] = {}
         self.state_mapping: dict[str, dict[str, Any]] = {}
 
     def _check_credentials(self, username: str, password: str) -> bool:
@@ -103,12 +120,23 @@ class EnvelOAuthProvider(OAuthAuthorizationServerProvider[AuthorizationCode, Ref
     # ── OAuthAuthorizationServerProvider interface ──
 
     async def get_client(self, client_id: str) -> OAuthClientInformationFull | None:
-        return self.clients.get(client_id)
+        with _get_users_conn() as conn:
+            row = conn.execute(
+                "SELECT client_json FROM oauth_clients WHERE client_id = ?", (client_id,)
+            ).fetchone()
+        if not row:
+            return None
+        return OAuthClientInformationFull.model_validate_json(row["client_json"])
 
     async def register_client(self, client_info: OAuthClientInformationFull):
         if not client_info.client_id:
             raise ValueError("No client_id")
-        self.clients[client_info.client_id] = client_info
+        with _get_users_conn() as conn:
+            conn.execute(
+                "INSERT OR REPLACE INTO oauth_clients (client_id, client_json) VALUES (?, ?)",
+                (client_info.client_id, client_info.model_dump_json()),
+            )
+            conn.commit()
 
     async def authorize(self, client: OAuthClientInformationFull, params: AuthorizationParams) -> str:
         state = params.state or secrets.token_hex(16)
@@ -136,35 +164,47 @@ class EnvelOAuthProvider(OAuthAuthorizationServerProvider[AuthorizationCode, Ref
 
         token_str = f"envel_{secrets.token_hex(32)}"
         username = getattr(authorization_code, "_username", "unknown")
+        expires_at = int(time.time()) + TOKEN_TTL
+        scopes_str = " ".join(authorization_code.scopes)
+        resource = str(authorization_code.resource) if authorization_code.resource else None
 
-        self.tokens[token_str] = AccessToken(
-            token=token_str,
-            client_id=client.client_id,
-            scopes=authorization_code.scopes,
-            expires_at=int(time.time()) + 3600 * 8,
-            resource=authorization_code.resource,
-        )
-        self.token_user[token_str] = username
+        with _get_users_conn() as conn:
+            conn.execute(
+                """INSERT INTO oauth_tokens (token, client_id, username, scopes, expires_at, resource)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (token_str, client.client_id, username, scopes_str, expires_at, resource),
+            )
+            conn.commit()
+
         del self.auth_codes[authorization_code.code]
-
         logger.info("token_issued", extra={"username": username, "client_id": client.client_id})
 
         return OAuthToken(
             access_token=token_str,
             token_type="Bearer",
-            expires_in=3600 * 8,
-            scope=" ".join(authorization_code.scopes),
+            expires_in=TOKEN_TTL,
+            scope=scopes_str,
         )
 
     async def load_access_token(self, token: str) -> AccessToken | None:
-        access_token = self.tokens.get(token)
-        if not access_token:
+        with _get_users_conn() as conn:
+            row = conn.execute(
+                "SELECT * FROM oauth_tokens WHERE token = ?", (token,)
+            ).fetchone()
+        if not row:
             return None
-        if access_token.expires_at and access_token.expires_at < time.time():
-            del self.tokens[token]
-            self.token_user.pop(token, None)
+        if row["expires_at"] < time.time():
+            with _get_users_conn() as conn:
+                conn.execute("DELETE FROM oauth_tokens WHERE token = ?", (token,))
+                conn.commit()
             return None
-        return access_token
+        return AccessToken(
+            token=row["token"],
+            client_id=row["client_id"],
+            scopes=row["scopes"].split(),
+            expires_at=row["expires_at"],
+            resource=row["resource"],
+        )
 
     async def load_refresh_token(self, client: OAuthClientInformationFull, refresh_token: str) -> RefreshToken | None:
         return None
@@ -173,8 +213,13 @@ class EnvelOAuthProvider(OAuthAuthorizationServerProvider[AuthorizationCode, Ref
         raise NotImplementedError
 
     async def revoke_token(self, token: str, token_type_hint: str | None = None) -> None:
-        username = self.token_user.pop(token, "unknown")
-        self.tokens.pop(token, None)
+        with _get_users_conn() as conn:
+            row = conn.execute(
+                "SELECT username FROM oauth_tokens WHERE token = ?", (token,)
+            ).fetchone()
+            username = row["username"] if row else "unknown"
+            conn.execute("DELETE FROM oauth_tokens WHERE token = ?", (token,))
+            conn.commit()
         logger.info("token_revoked", extra={"username": username})
 
     # ── Login flow ──
@@ -278,7 +323,11 @@ def make_introspect_handler(provider: EnvelOAuthProvider):
             logger.debug("introspect_inactive", extra={"token_prefix": str(token)[:12]})
             return JSONResponse({"active": False})
 
-        username = provider.token_user.get(token, "unknown")
+        with _get_users_conn() as conn:
+            row = conn.execute(
+                "SELECT username FROM oauth_tokens WHERE token = ?", (token,)
+            ).fetchone()
+        username = row["username"] if row else "unknown"
         user = _get_user(username)
         db_path = user["db_path"] if user else ""
 
@@ -319,18 +368,17 @@ def make_service_token_handler(provider: EnvelOAuthProvider):
             return JSONResponse({"error": "user not found"}, status_code=404)
 
         token_str = f"envel_{secrets.token_hex(32)}"
-        expires_in = 3600 * 8
-        provider.tokens[token_str] = AccessToken(
-            token=token_str,
-            client_id="platform",
-            scopes=[MCP_SCOPE],
-            expires_at=int(time.time()) + expires_in,
-            resource=None,
-        )
-        provider.token_user[token_str] = username
+        expires_at = int(time.time()) + TOKEN_TTL
+        with _get_users_conn() as conn:
+            conn.execute(
+                """INSERT INTO oauth_tokens (token, client_id, username, scopes, expires_at, resource)
+                   VALUES (?, ?, ?, ?, ?, NULL)""",
+                (token_str, "platform", username, MCP_SCOPE, expires_at),
+            )
+            conn.commit()
 
         logger.info("service_token_issued", extra={"username": username})
-        return JSONResponse({"access_token": token_str, "expires_in": expires_in})
+        return JSONResponse({"access_token": token_str, "expires_in": TOKEN_TTL})
 
     return service_token
 
