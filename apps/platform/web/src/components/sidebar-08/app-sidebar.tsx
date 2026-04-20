@@ -46,7 +46,7 @@ export function AppSidebar({ theme, setTheme, ...props }: AppSidebarProps) {
 
   const user = {
     name: username ?? "User",
-    email: username ? `${username}@envel.app` : "user@envel.app",
+    email: username ? `${username}@envel.dev` : "user@envel.dev",
     avatar: "",
   }
 

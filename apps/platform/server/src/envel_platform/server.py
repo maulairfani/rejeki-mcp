@@ -95,60 +95,28 @@ app.include_router(transactions_router, prefix="/api/transactions", tags=["trans
 app.include_router(wishlist_router, prefix="/api/wishlist", tags=["wishlist"])
 app.include_router(backup_router, prefix="/api/backup", tags=["backup"])
 
-# ─── Serve frontend builds (production) ──────────────────────────────
-# Path layout inside the repo:
-#   apps/platform/server/src/envel_platform/server.py   ← this file
-#   apps/platform/web/dist/                              ← platform dashboard build
-#   apps/marketing/dist/                                 ← marketing site build
-#
-# Routing:
-#   /api/*         → API routers (registered above)
-#   /app/assets/*  → platform dashboard assets
-#   /app, /app/*   → platform dashboard SPA
-#   /assets/*      → marketing assets
-#   /, /*          → marketing SPA  (catch-all, last)
-#
-# Mounts are registered BEFORE catch-all SPA routes. Route-registration
-# order matters: the /app routes are added before the root catch-all so
-# requests like `/app/envelopes` don't get swallowed by the marketing SPA.
+# ─── Serve platform dashboard SPA at root ────────────────────────────
+# /api/* → API routers (registered above)
+# /*     → platform dashboard SPA
+# Marketing site is served separately by nginx on envel.dev.
 
-_apps_root = Path(__file__).parent.parent.parent.parent.parent
-_platform_dist = _apps_root / "platform" / "web" / "dist"
-_marketing_dist = _apps_root / "marketing" / "dist"
+_platform_dist = Path(__file__).parent.parent.parent.parent.parent / "platform" / "web" / "dist"
 
-# Platform dashboard at /app
 if _platform_dist.exists():
     app.mount(
-        "/app/assets",
+        "/assets",
         StaticFiles(directory=str(_platform_dist / "assets")),
         name="platform-assets",
     )
 
-    @app.get("/app/favicon.svg", include_in_schema=False)
+    @app.get("/favicon.svg", include_in_schema=False)
     async def platform_favicon():
         return FileResponse(str(_platform_dist / "favicon.svg"))
 
-    @app.get("/app", include_in_schema=False)
-    @app.get("/app/{full_path:path}", include_in_schema=False)
-    async def serve_platform_spa(full_path: str = ""):
-        return FileResponse(str(_platform_dist / "index.html"))
-
-# Marketing site at /
-if _marketing_dist.exists():
-    app.mount(
-        "/assets",
-        StaticFiles(directory=str(_marketing_dist / "assets")),
-        name="marketing-assets",
-    )
-
-    @app.get("/favicon.svg", include_in_schema=False)
-    async def marketing_favicon():
-        return FileResponse(str(_marketing_dist / "favicon.svg"))
-
     @app.get("/", include_in_schema=False)
     @app.get("/{full_path:path}", include_in_schema=False)
-    async def serve_marketing_spa(full_path: str = ""):
-        return FileResponse(str(_marketing_dist / "index.html"))
+    async def serve_platform_spa(full_path: str = ""):
+        return FileResponse(str(_platform_dist / "index.html"))
 
 
 def main():
