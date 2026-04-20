@@ -58,17 +58,9 @@ export function HomePage() {
   return (
     <div>
       {/* ── HERO ── */}
-      <section style={{ padding: "80px 0 64px", overflow: "hidden" }}>
+      <section className="hero-section">
         <div className="container">
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: 64,
-              alignItems: "center",
-            }}
-            className="hero-grid"
-          >
+          <div className="hero-grid">
             <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
               <div className="label" style={{ color: "var(--brand-text)" }}>
                 AI-First Personal Finance
@@ -251,7 +243,7 @@ export function HomePage() {
       </section>
 
       {/* ── DEMO ── */}
-      <section style={{ background: "var(--bg-dark)", padding: "96px 0" }}>
+      <section className="section demo-section">
         <div className="container">
           <div style={{ textAlign: "center", marginBottom: 52 }}>
             <h2 className="h1" style={{ color: "#fff", marginBottom: 14 }}>

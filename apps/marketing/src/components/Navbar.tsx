@@ -1,8 +1,12 @@
+import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { LogoMark } from "./LogoMark"
 
 export function Navbar() {
   const navigate = useNavigate()
+  const [open, setOpen] = useState(false)
+
+  const close = () => setOpen(false)
 
   return (
     <nav className="nav">
@@ -15,6 +19,7 @@ export function Navbar() {
               e.preventDefault()
               navigate("/")
               window.scrollTo({ top: 0, behavior: "smooth" })
+              close()
             }}
           >
             <LogoMark size={28} />
@@ -61,8 +66,60 @@ export function Navbar() {
           </div>
 
           <button
-            className="btn btn-primary"
-            style={{ fontSize: 13.5, padding: "9px 20px" }}
+            className="btn btn-primary nav-cta"
+            onClick={() => {
+              window.location.href = "/app"
+            }}
+          >
+            Get Started
+          </button>
+
+          <button
+            className="nav-burger"
+            aria-label="Toggle menu"
+            aria-expanded={open}
+            onClick={() => setOpen((v) => !v)}
+          >
+            <span className={`burger-bar ${open ? "open" : ""}`} />
+            <span className={`burger-bar ${open ? "open" : ""}`} />
+            <span className={`burger-bar ${open ? "open" : ""}`} />
+          </button>
+        </div>
+
+        <div className={`nav-mobile ${open ? "open" : ""}`}>
+          <div className="nav-mobile-section">
+            <div className="nav-mobile-label">What is Envel?</div>
+            <a href="/#method" onClick={close}>The Method</a>
+            <a href="/#features" onClick={close}>Features</a>
+            <a
+              href="/docs"
+              onClick={(e) => {
+                e.preventDefault()
+                navigate("/docs")
+                close()
+              }}
+            >
+              Docs
+            </a>
+          </div>
+          <div className="nav-mobile-section">
+            <div className="nav-mobile-label">Learn</div>
+            <a
+              href="/blog"
+              onClick={(e) => {
+                e.preventDefault()
+                navigate("/blog")
+                close()
+              }}
+            >
+              Blog
+            </a>
+            <a href="#" onClick={close}>Tips & Guides</a>
+            <a href="#" onClick={close}>Product Updates</a>
+          </div>
+          <button
+            className="btn btn-primary btn-lg"
+            style={{ width: "100%", marginTop: 8 }}
             onClick={() => {
               window.location.href = "/app"
             }}
