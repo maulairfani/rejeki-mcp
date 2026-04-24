@@ -5,7 +5,7 @@ from urllib.parse import quote
 import httpx
 from dotenv import load_dotenv
 from fastmcp import FastMCP
-from fastmcp.server.auth import TokenVerifier, AccessToken
+from fastmcp.server.auth import TokenVerifier, AccessToken, RemoteAuthProvider
 from mcp.types import Icon
 from starlette.applications import Starlette
 from starlette.responses import PlainTextResponse
@@ -30,6 +30,8 @@ logger = logging.getLogger("envel_mcp")
 # ─── CONFIG ──────────────────────────────────────────────────────────────────
 
 INTROSPECT_URL = os.environ.get("INTROSPECT_URL", "http://127.0.0.1:9004/introspect")
+MCP_BASE_URL = os.environ.get("MCP_BASE_URL", "https://envel.dev/mcp")
+AS_BASE_URL = os.environ.get("AS_BASE_URL", "https://envel.dev/auth")
 
 
 # ─── TOKEN VERIFIER ──────────────────────────────────────────────────────────
@@ -95,9 +97,13 @@ class TestTokenVerifier(TokenVerifier):
 
 _test_token = os.environ.get("TEST_TOKEN")
 if _test_token:
-    _token_verifier: TokenVerifier = TestTokenVerifier(_test_token)
+    _auth = TestTokenVerifier(_test_token)
 else:
-    _token_verifier = EnvelTokenVerifier()
+    _auth = RemoteAuthProvider(
+        token_verifier=EnvelTokenVerifier(),
+        authorization_servers=[AS_BASE_URL],
+        base_url=MCP_BASE_URL,
+    )
 
 _envel_icon = Icon(
     src="data:image/svg+xml," + quote(
@@ -110,7 +116,7 @@ _envel_icon = Icon(
 mcp = FastMCP(
     "envel",
     icons=[_envel_icon],
-    auth=_token_verifier,
+    auth=_auth,
     instructions=(
         "Personal envelope-budgeting application. "
         "Tracks accounts, envelope categories, transactions, and assets. "
