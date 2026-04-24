@@ -22,6 +22,7 @@ export interface Envelope {
   type: "income" | "expense"
   groupId: number | null
   sortOrder: number
+  archived: boolean
   target: EnvelopeTarget | null
 }
 
@@ -59,6 +60,7 @@ interface EnvelopeRow {
   group_name: string
   group_sort: number
   sort_order: number
+  archived: number
   target_type: string | null
   target_amount: number | null
   target_deadline: string | null
@@ -84,6 +86,7 @@ function transformRows(rows: EnvelopeRow[]): {
       type: "expense" as const,
       groupId: r.group_id,
       sortOrder: r.sort_order,
+      archived: Boolean(r.archived),
       target: r.target_type
         ? {
             type: r.target_type as TargetType,
@@ -135,10 +138,18 @@ function transformRows(rows: EnvelopeRow[]): {
 
 // ── Hook ────────────────────────────────────────────────
 
-export function useEnvelopes(period: string) {
+export interface UseEnvelopesOptions {
+  includeArchived?: boolean
+}
+
+export function useEnvelopes(period: string, options: UseEnvelopesOptions = {}) {
+  const includeArchived = options.includeArchived ?? false
   const { data, isLoading, error } = useQuery({
-    queryKey: ["envelopes", period],
-    queryFn: () => api<EnvelopeRow[]>(`/api/envelopes?period=${period}`),
+    queryKey: ["envelopes", period, { includeArchived }],
+    queryFn: () =>
+      api<EnvelopeRow[]>(
+        `/api/envelopes?period=${period}&include_archived=${includeArchived}`
+      ),
   })
 
   const { groups, allEnvelopes } = data ? transformRows(data) : { groups: [], allEnvelopes: [] }

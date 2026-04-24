@@ -104,13 +104,17 @@ def create_transaction(
     return dict(row)
 
 
-def get_envelope_status(username: str, period: str) -> list[dict]:
-    sql = """
+def get_envelope_status(
+    username: str, period: str, include_archived: bool = False
+) -> list[dict]:
+    archived_clause = "" if include_archived else " AND e.archived = 0"
+    sql = f"""
         SELECT
             e.id,
             e.name,
             e.icon,
             e.group_id,
+            e.archived,
             COALESCE(eg.name, 'Uncategorized') AS group_name,
             COALESCE(eg.sort_order, 999) AS group_sort,
             e.sort_order,
@@ -124,7 +128,7 @@ def get_envelope_status(username: str, period: str) -> list[dict]:
         LEFT JOIN envelope_groups eg ON e.group_id = eg.id
         LEFT JOIN budget_periods bp ON bp.envelope_id = e.id AND bp.period = ?
         LEFT JOIN transactions t ON t.envelope_id = e.id AND strftime('%Y-%m', t.date) = ?
-        WHERE e.type = 'expense'
+        WHERE e.type = 'expense'{archived_clause}
         GROUP BY e.id
         ORDER BY COALESCE(eg.sort_order, 999), e.sort_order, e.name
     """

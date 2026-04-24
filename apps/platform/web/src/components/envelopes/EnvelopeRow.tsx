@@ -93,10 +93,21 @@ export function EnvelopeRow({
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
-            <span className="truncate text-[13.5px] font-medium text-text-primary">
+            <span
+              className={`truncate text-[13.5px] font-medium ${
+                envelope.archived
+                  ? "text-text-muted line-through"
+                  : "text-text-primary"
+              }`}
+            >
               {envelope.name}
             </span>
-            {savingsLabel && (
+            {envelope.archived && (
+              <Badge color="muted" size="xs">
+                Archived
+              </Badge>
+            )}
+            {savingsLabel && !envelope.archived && (
               <Badge color="brand" size="xs">
                 {savingsLabel}
               </Badge>

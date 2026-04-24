@@ -33,7 +33,11 @@ import { EnvelopeDetailDialog } from "@/components/envelopes/EnvelopeDetailDialo
 
 export function EnvelopesPage({ showNominal }: { showNominal: boolean }) {
   const [period, setPeriod] = useState(currentPeriod)
-  const { groups: initialGroups, allEnvelopes, isLoading } = useEnvelopes(period)
+  const [includeArchived, setIncludeArchived] = useState(false)
+  const { groups: initialGroups, allEnvelopes, isLoading } = useEnvelopes(
+    period,
+    { includeArchived }
+  )
   const queryClient = useQueryClient()
   const reorderEnvelopes = useReorderEnvelopes(period)
   const reorderGroups = useReorderEnvelopeGroups(period)
@@ -136,7 +140,7 @@ export function EnvelopesPage({ showNominal }: { showNominal: boolean }) {
   const setGroupsInCache = useCallback(
     (nextGroups: EnvelopeGroupWithBudgets[]) => {
       queryClient.setQueryData<unknown[]>(
-        ["envelopes", period],
+        ["envelopes", period, { includeArchived }],
         // Rebuild the flat row list in the exact order the UI expects.
         () => {
           const rows: Record<string, unknown>[] = []
@@ -150,6 +154,7 @@ export function EnvelopesPage({ showNominal }: { showNominal: boolean }) {
                 group_name: g.group.name,
                 group_sort: gIdx,
                 sort_order: eIdx,
+                archived: item.envelope.archived ? 1 : 0,
                 target_type: item.envelope.target?.type ?? null,
                 target_amount: item.envelope.target?.amount ?? null,
                 target_deadline: item.envelope.target?.deadline ?? null,
@@ -169,7 +174,7 @@ export function EnvelopesPage({ showNominal }: { showNominal: boolean }) {
         }
       )
     },
-    [queryClient, period]
+    [queryClient, period, includeArchived]
   )
 
   function handleDragStart(e: DragStartEvent) {
@@ -312,6 +317,17 @@ export function EnvelopesPage({ showNominal }: { showNominal: boolean }) {
             tone={totalAvailable < 0 ? "auto" : "neutral"}
           />
         </div>
+        <button
+          onClick={() => setIncludeArchived((v) => !v)}
+          aria-pressed={includeArchived}
+          className={
+            includeArchived
+              ? "inline-flex items-center gap-1.5 rounded-full bg-brand-light px-3 py-1 text-xs font-semibold text-brand-text transition-colors hover:brightness-95"
+              : "inline-flex items-center gap-1.5 rounded-full bg-bg-muted px-3 py-1 text-xs font-semibold text-text-muted transition-colors hover:text-text-secondary"
+          }
+        >
+          {includeArchived ? "Hide archived" : "Show archived"}
+        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto">

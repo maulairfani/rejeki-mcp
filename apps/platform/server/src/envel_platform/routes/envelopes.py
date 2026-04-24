@@ -41,10 +41,11 @@ class GroupReorderRequest(BaseModel):
 async def envelopes(
     username: str = Depends(require_user),
     period: str = Query(default=None),
+    include_archived: bool = Query(default=False),
 ):
     if not period:
         period = datetime.now().strftime("%Y-%m")
-    return get_envelope_status(username, period)
+    return get_envelope_status(username, period, include_archived)
 
 
 @router.patch("/reorder")
