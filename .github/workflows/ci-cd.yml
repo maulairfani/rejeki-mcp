@@ -70,12 +70,12 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy irfani@envel.dev 'bash -s' <<'EOF'
             set -euo pipefail
-            cd /opt/envel-mcp
+            cd /home/irfani/apps/envel-mcp
             git fetch --prune origin main
             git reset --hard origin/main
             (cd apps/platform/web && npm ci && npm run build)
             (cd apps/marketing && npm ci && npm run build)
-            sudo cp -r apps/marketing/dist/. /var/www/html/
+            sudo cp -r apps/marketing/dist/. /var/www/envel.dev/
             sudo systemctl restart envel-auth envel-mcp envel-platform
             sleep 2
             sudo systemctl is-active envel-auth envel-mcp envel-platform
