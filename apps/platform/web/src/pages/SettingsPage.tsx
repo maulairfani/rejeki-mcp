@@ -1,5 +1,10 @@
+import { useEffect, useState } from "react"
 import { RefreshCw, Unlink } from "lucide-react"
 import { useBackupStatus, useTriggerBackup } from "@/hooks/useBackup"
+import {
+  useMorningBriefing,
+  useUpdateMorningBriefing,
+} from "@/hooks/useMorningBriefing"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import { PageHeader } from "@/components/shared/PageHeader"
@@ -148,9 +153,128 @@ export function SettingsPage() {
               </>
             )}
           </div>
+
+          <MorningBriefingCard />
         </div>
         <div className="h-10" />
       </div>
+    </div>
+  )
+}
+
+function MorningBriefingCard() {
+  const { briefing, isLoading } = useMorningBriefing()
+  const update = useUpdateMorningBriefing()
+
+  const [draft, setDraft] = useState("")
+  useEffect(() => {
+    if (briefing?.prompt !== undefined) setDraft(briefing.prompt ?? "")
+  }, [briefing?.prompt])
+
+  const enabled = briefing?.enabled ?? true
+  const dirty = (briefing?.prompt ?? "") !== draft
+
+  return (
+    <div className="mt-6 rounded-xl border border-border bg-card p-5 shadow-xs">
+      <div className="mb-4 flex items-start justify-between gap-3.5">
+        <div className="flex items-start gap-3.5">
+          <div
+            className="flex size-10 items-center justify-center rounded-lg text-xl"
+            style={{ background: "oklch(94% 0.05 50 / 0.7)" }}
+          >
+            🌅
+          </div>
+          <div>
+            <p className="font-heading text-sm font-bold text-text-primary">
+              Morning Briefing
+            </p>
+            <p className="text-[12.5px] text-text-muted">
+              Daily check-in fired the first time you chat with Claude each day
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          role="switch"
+          aria-checked={enabled}
+          disabled={isLoading || update.isPending}
+          onClick={() => update.mutate({ enabled: !enabled })}
+          className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
+            enabled ? "bg-brand" : "bg-bg-muted"
+          }`}
+        >
+          <span
+            className={`inline-block size-4 transform rounded-full bg-white shadow transition-transform ${
+              enabled ? "translate-x-[18px]" : "translate-x-0.5"
+            }`}
+          />
+        </button>
+      </div>
+
+      {enabled && (
+        <>
+          <div className="mb-2 flex items-center justify-between">
+            <label
+              htmlFor="briefing-prompt"
+              className="text-[12.5px] font-semibold text-text-secondary"
+            >
+              Briefing instruction
+            </label>
+            {briefing?.last_shown && (
+              <span className="text-[11px] text-text-muted">
+                Last shown:{" "}
+                {new Date(briefing.last_shown).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                })}
+              </span>
+            )}
+          </div>
+          <textarea
+            id="briefing-prompt"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            rows={4}
+            placeholder="e.g. Cek apakah envelope Makan dan Transport udah lewat 80% dari budget bulan ini, dan recap total pengeluaran kemarin."
+            className="w-full rounded-md border border-border bg-bg px-3 py-2 text-[13px] text-text-primary placeholder:text-text-placeholder focus:border-brand focus:outline-none"
+          />
+          <p className="mt-1.5 text-[11.5px] text-text-muted">
+            Plain English description of what you want each morning. Claude will
+            figure out which tools to call.
+          </p>
+
+          <div className="mt-3 flex items-center gap-2.5">
+            <button
+              type="button"
+              disabled={!dirty || update.isPending}
+              onClick={() =>
+                update.mutate(
+                  draft.trim()
+                    ? { prompt: draft }
+                    : { clear_prompt: true }
+                )
+              }
+              className="inline-flex items-center gap-1.5 rounded-md bg-brand px-4 py-2 text-[13px] font-semibold text-white transition-opacity hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {update.isPending ? "Saving…" : "Save"}
+            </button>
+            {briefing?.prompt && (
+              <button
+                type="button"
+                onClick={() => {
+                  setDraft("")
+                  update.mutate({ clear_prompt: true })
+                }}
+                className="text-[12px] font-medium text-text-muted hover:text-text-secondary"
+              >
+                Clear prompt
+              </button>
+            )}
+          </div>
+        </>
+      )}
     </div>
   )
 }

@@ -65,6 +65,15 @@ def _ensure_migrated(conn: sqlite3.Connection, path: str) -> None:
         )
     """)
     conn.execute("CREATE INDEX IF NOT EXISTS idx_transaction_tags_tag ON transaction_tags(tag_id)")
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS user_settings (
+            id                          INTEGER PRIMARY KEY CHECK (id = 1),
+            morning_briefing_enabled    INTEGER NOT NULL DEFAULT 1,
+            morning_briefing_prompt     TEXT,
+            morning_briefing_last_shown TEXT
+        )
+    """)
+    conn.execute("INSERT OR IGNORE INTO user_settings (id) VALUES (1)")
     conn.commit()
     _MIGRATED.add(path)
 
@@ -374,6 +383,53 @@ def set_transaction_tags(username: str, transaction_id: int, tag_names: list[str
             (transaction_id,),
         ).fetchall()
     return [r["name"] for r in rows]
+
+
+def get_morning_briefing(username: str) -> dict:
+    """Return the user's morning-briefing settings."""
+    with get_conn(username) as conn:
+        row = conn.execute(
+            """
+            SELECT morning_briefing_enabled,
+                   morning_briefing_prompt,
+                   morning_briefing_last_shown
+            FROM user_settings WHERE id = 1
+            """
+        ).fetchone()
+    if not row:
+        return {"enabled": True, "prompt": None, "last_shown": None}
+    return {
+        "enabled": bool(row["morning_briefing_enabled"]),
+        "prompt": row["morning_briefing_prompt"],
+        "last_shown": row["morning_briefing_last_shown"],
+    }
+
+
+def update_morning_briefing(
+    username: str,
+    enabled: bool | None = None,
+    prompt: str | None = None,
+    clear_prompt: bool = False,
+) -> dict:
+    """Patch one or more morning-briefing fields. Pass clear_prompt=True to wipe."""
+    sets: list[str] = []
+    params: list = []
+    if enabled is not None:
+        sets.append("morning_briefing_enabled = ?")
+        params.append(1 if enabled else 0)
+    if clear_prompt:
+        sets.append("morning_briefing_prompt = NULL")
+    elif prompt is not None:
+        sets.append("morning_briefing_prompt = ?")
+        params.append(prompt.strip() or None)
+    if not sets:
+        return get_morning_briefing(username)
+    params.append(1)
+    sql = f"UPDATE user_settings SET {', '.join(sets)} WHERE id = ?"
+    with get_conn(username) as conn:
+        conn.execute(sql, params)
+        conn.commit()
+    return get_morning_briefing(username)
 
 
 def get_wishlist(username: str, status: str | None = None) -> list[dict]:
