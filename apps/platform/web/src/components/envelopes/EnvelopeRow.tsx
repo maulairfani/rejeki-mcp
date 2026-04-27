@@ -108,11 +108,18 @@ export function EnvelopeRow({
               </Badge>
             )}
             {savingsLabel && !envelope.archived && (
-              <Badge color="brand" size="xs">
-                {savingsLabel}
-              </Badge>
+              <span className="hidden sm:contents">
+                <Badge color="brand" size="xs">
+                  {savingsLabel}
+                </Badge>
+              </span>
             )}
           </div>
+          {savingsLabel && !envelope.archived && (
+            <div className="mt-0.5 text-[11px] text-text-muted sm:hidden">
+              {savingsLabel}
+            </div>
+          )}
           {funded > 0 && (
             <div className="mt-1.5">
               <ProgressBar
@@ -133,8 +140,15 @@ export function EnvelopeRow({
               size="sm"
               tone={budget.available < 0 ? "auto" : "neutral"}
             />
-          ) : (
+          ) : showNominal ? (
             <span className="text-xs text-text-muted">Rp 0</span>
+          ) : (
+            <AmountText
+              amount={0}
+              showNominal={false}
+              size="sm"
+              tone="neutral"
+            />
           )}
         </div>
       </button>
