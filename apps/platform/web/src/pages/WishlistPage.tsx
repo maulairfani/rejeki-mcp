@@ -17,7 +17,7 @@ export function WishlistPage({ showNominal }: { showNominal: boolean }) {
   const { items, totalWanted, wantedCount, boughtCount } = useWishlist()
 
   const [filter, setFilter] = useState<WishlistFilter>("all")
-  const [sort, setSort] = useState<WishlistSort>("newest")
+  const [sort, setSort] = useState<WishlistSort>("priority")
   const [search, setSearch] = useState("")
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null)
 
