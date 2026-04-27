@@ -35,7 +35,7 @@ export function TransactionRow({ transaction, showNominal }: TransactionRowProps
 
   const payee =
     transaction.type === "transfer"
-      ? `${transaction.account} → ${transaction.toAccount}`
+      ? `${transaction.account} → ${transaction.toAccount ?? "—"}`
       : transaction.payee ?? "—"
 
   const memo = transaction.memo ?? ""

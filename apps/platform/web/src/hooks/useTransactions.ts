@@ -33,6 +33,7 @@ interface TransactionRow {
   payee: string | null
   memo: string | null
   account_name: string | null
+  to_account_name: string | null
   envelope_name: string | null
   envelope_icon: string | null
 }
@@ -45,7 +46,7 @@ function transformRow(r: TransactionRow): Transaction {
     envelope: r.envelope_name,
     envelopeIcon: r.envelope_icon,
     account: r.account_name ?? "—",
-    toAccount: null,
+    toAccount: r.to_account_name,
     payee: r.payee,
     memo: r.memo,
     date: r.date.slice(0, 10), // normalize to YYYY-MM-DD
